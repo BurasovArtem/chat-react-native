@@ -9,7 +9,7 @@ import {
   FlatList,
   Dimensions
 } from 'react-native';
-import User from '../User.js';
+import User from '../constants/User.js';
 import firebase from 'firebase';
 import styles from '../constants/Styles.js';
 

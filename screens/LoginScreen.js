@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import firebase from 'firebase';
 import styles from '../constants/Styles.js';
-import User from '../User.js';
+import User from '../constants/User.js';
 
 export default class LoginScreen extends React.Component {
   static navigationOptions = {
