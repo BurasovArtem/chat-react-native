@@ -5,15 +5,26 @@ import {
   TouchableOpacity,
   AsyncStorage,
   FlatList,
-  SafeAreaView
+  SafeAreaView,
+  Image
 } from 'react-native';
 import firebase from 'firebase';
 import styles from '../constants/Styles.js';
 import User from '../constants/User.js';
 
 export default class HomeScreen extends React.Component {
-  static navigationOptions = {
-    title: 'Chats'
+  static navigationOptions = ({navigation}) => {
+    return {
+      title: 'Chats',
+      headerRight: (
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Image
+            source={require('../images/avatar.png')}
+            style={{width: 32, height: 32, marginRight: 7}}
+          />
+        </TouchableOpacity>
+      )
+    }
   }
 
   state = {
@@ -61,8 +72,11 @@ export default class HomeScreen extends React.Component {
           renderItem={this.renderRow}
           keyExtractor={(item) => item.phone}
         />
-        <TouchableOpacity style={{ position: 'absolute', top: 300}} onPress={this._logOut}>
-          <Text>Logout</Text>
+        <TouchableOpacity style={{ position: 'absolute', top:560, left: 300}} onPress={this._logOut}>
+          <Image
+            source={require('../images/logout.png')}
+            style={{width: 32, height: 32, marginRight: 7}}
+          />
         </TouchableOpacity>
       </SafeAreaView>
     )

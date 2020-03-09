@@ -7,7 +7,8 @@ import {
   View,
   StyleSheet,
   FlatList,
-  Dimensions
+  Dimensions,
+  Image
 } from 'react-native';
 import User from '../constants/User.js';
 import firebase from 'firebase';
@@ -101,7 +102,7 @@ export default class ChatScreen extends React.Component {
           renderItem={this.renderRow}
           keyExtractor={(item, index) => index.toString()}
         />
-        <View style={{flexDirection: 'row', alignItems: 'center', marginHorizontal: 5}}>
+        <View style={{flexDirection: 'row', alignItems: 'center', marginHorizontal: 5, marginTop: 20}}>
           <TextInput
             style={styles.input}
             value={this.state.textMessage}
@@ -109,7 +110,10 @@ export default class ChatScreen extends React.Component {
             placeholder='Type message...'
           />
           <TouchableOpacity onPress={this.sendMessage}>
-            <Text style={styles.btnText}>Send</Text>
+          <Image
+            source={require('../images/share.png')}
+            style={{width: 32, height: 32, marginLeft: 5, marginBottom: 5}}
+          />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
