@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  SafeAreaView,
+  KeyboardAvoidingView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -8,11 +8,16 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
-  Image
+  Image,
+  Animated,
+  Platform,
+  Keyboard
 } from 'react-native';
 import User from '../constants/User.js';
 import firebase from 'firebase';
 import styles from '../constants/Styles.js';
+
+const isIOS = Platform.OS === 'ios';
 
 export default class ChatScreen extends React.Component {
   static navigationOptions = ({navigation}) => {
@@ -29,18 +34,44 @@ export default class ChatScreen extends React.Component {
         phone: props.navigation.getParam('phone'),
       },
       textMessage: '',
-      messageList: []
+      messageList: [],
+      dbRef: firebase.database().ref('messages')
     }
+    this.keyboardHeight = new Animated.Value(0);
+    this.bottomPadding = new Animated.Value(60);
   }
 
-  componentWillMount() {
-    firebase.database().ref('messages').child(User.phone).child(this.state.person.phone).on('child_added', (value) => {
+  componentDidMount() {
+    this.keyboardShowListener = Keyboard.addListener( isIOS ? 'keyboardWillShow' : 'keyboardDidShow', (e) => this.keyboardEvent(e, true));
+    this.keyboardHideListener = Keyboard.addListener( isIOS ? 'keyboardWillHide' : 'keyboardDidHide', (e) => this.keyboardEvent(e, false));
+    this.state.dbRef.child(User.phone).child(this.state.person.phone).on('child_added', (value) => {
       this.setState((prevState) => {
         return {
           messageList: [...prevState.messageList, value.val()]
         }
       })
     })
+  }
+
+  componentWillUnmount() {
+    this.state.dbRef.off();
+    this.keyboardShowListener.remove();
+    this.keyboardHideListener.remove();
+  }
+
+  keyboardEvent = (event, isShow) => {
+    let heightOS = isIOS ? 60 : 80;
+    let bottomOS = isIOS ? 120 : 140;
+    Animated.parallel([
+      Animated.timing(this.keyboardHeight, {
+        duration: event.duration,
+        toValue: isShow ? heightOS : 0
+      }),
+      Animated.timing(this.bottomPadding, {
+        duration: event.duration,
+        toValue: isShow ? bottomOS : 60
+      })
+    ]).start();
   }
 
   handleChange = key => val => {
@@ -51,25 +82,25 @@ export default class ChatScreen extends React.Component {
     let d = new Date(time);
     let c = new Date();
     let result = (d.getHours() < 10 ? '0' : '') + d.getHours() + ':';
-    result +=(d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    result += (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
     if(c.getDay() !== d.getDay()) {
-      result = d.getDay() + ' ' + d.getMouth() + ' ' + result;
+      result = d.getDay() + ' ' + d.getMonth() + ' ' + result;
     }
     return result;
   }
 
   sendMessage = async() => {
     if (this.state.textMessage.length > 0) {
-      let msgId = firebase.database().ref('messages').child(User.phone).child(this.state.person.phone).push().key;
+      let msgId = this.state.dbRef.child(User.phone).child(this.state.person.phone).push().key;
       let updates = {};
       let message = {
         message: this.state.textMessage,
         time: firebase.database.ServerValue.TIMESTAMP,
         from: User.phone
       }
-      updates['messages/' + User.phone + '/' + this.state.person.phone + '/' + msgId] = message;
-      updates['messages/' + this.state.person.phone + '/' + User.phone + '/' + msgId] = message;
-      firebase.database().ref().update(updates);
+      updates[User.phone + '/' + this.state.person.phone + '/' + msgId] = message;
+      updates[this.state.person.phone + '/' + User.phone + '/' + msgId] = message;
+      this.state.dbRef.update(updates);
       this.setState({textMessage: ''});
     }
   }
@@ -78,7 +109,7 @@ export default class ChatScreen extends React.Component {
     return (
       <View style={{
         flexDirection: 'row',
-        width: '60%',
+        maxWidth: '60%',
         alignSelf: item.from === User.phone ? 'flex-end' : 'flex-start',
         backgroundColor: item.from === User.phone ? '#00897b' : '#7cb342',
         borderRadius: 5,
@@ -93,30 +124,34 @@ export default class ChatScreen extends React.Component {
   }
 
   render() {
-    let{ height, width } = Dimensions.get('window');
+    let{ height } = Dimensions.get('window');
     return (
-      <SafeAreaView>
-        <FlatList
-          style={{padding: 10, height: height * 0.8, }}
-          data={this.state.messageList}
-          renderItem={this.renderRow}
-          keyExtractor={(item, index) => index.toString()}
-        />
-        <View style={{flexDirection: 'row', alignItems: 'center', marginHorizontal: 5, marginTop: 20}}>
+      <KeyboardAvoidingView behavior='height' style={{flex: 1}}>
+        <Animated.View style={[styles.bottomBar, {bottom: this.keyboardHeight}]}>
           <TextInput
-            style={styles.input}
+            style={styles.inputChat}
             value={this.state.textMessage}
             onChangeText={this.handleChange('textMessage')}
             placeholder='Type message...'
           />
-          <TouchableOpacity onPress={this.sendMessage}>
-          <Image
-            source={require('../images/share.png')}
-            style={{width: 32, height: 32, marginLeft: 5, marginBottom: 5}}
-          />
+          <TouchableOpacity onPress={this.sendMessage} style={styles.btnSend}>
+            <Image
+              source={require('../images/share.png')}
+              style={{ tintColor: 'white', resizeMode: 'contain', height: 20 }}
+            />
           </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+        </Animated.View>
+        <FlatList
+          ref={ref => this.flatList = ref}
+          onContentSizeChange={() => this.flatList.scrollToEnd({ animated: true })}
+          onLayout = {() => this.flatList.scrollToEnd({ animated: true })}
+          style={{paddingTop: 5, paddingHorizontal: 5, height }}
+          data={this.state.messageList}
+          renderItem={this.renderRow}
+          keyExtractor={(item, index) => index.toString()}
+          ListFooterComponent={<Animated.View style={{height: this.bottomPadding}} />}
+        />
+      </KeyboardAvoidingView>
     )
   }
 }

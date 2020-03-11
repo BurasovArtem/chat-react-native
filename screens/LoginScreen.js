@@ -13,7 +13,7 @@ import User from '../constants/User.js';
 
 export default class LoginScreen extends React.Component {
   static navigationOptions = {
-    header: null
+    header: null,
   }
 
   state = {
