@@ -6,7 +6,7 @@ Console "expo init project"
 
 Move downloaded files to the root folder with replacement
 
-Console "npm intall react-navigation react-navigation-stack react-native-safe-area-context react-native-screens @react-native-community/masked-view firebase"
+Console "npm install react-native-image-picker react-navigation react-navigation-stack react-native-safe-area-context react-native-screens @react-native-community/masked-view firebase react-native-gesture-handler react-navigation-tabs react-native-reanimated"
 
 Сreate project on the site https://console.firebase.google.com
 
